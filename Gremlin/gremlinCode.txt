@@ -1,0 +1,92 @@
+g = new Neo4jGraph('/tmp/FEC5')
+g.dropIndex("edges")
+g.setMaxBufferSize(2500)
+
+new File('/fecdata/cm.txt').eachLine {def line ->
+  def components = line.split('|');
+  def committeeVertex = g.addVertex(['type':'Committee','committeeId':components[0], 'committeeName':components[1], 'treasurer':components[2],'committeeStreetOne':components[3]',
+'committeeStreet2':components[4],'city':components[5],'state':components[6],'zip':components[7],'committeeDesig':components[8],'connectedOrgName':components[14]]);
+}
+
+new File('cand.dat').eachLine {def line ->
+  def components = line.split('::');
+  def candVertex = g.addVertex(['type':'Candidate','candId':components[0], 'candName':components[2], 'candCity':components[3], 'candState':components[4],'candZip':components[5],'candParty':components[6],'candStatus':components[7],'candYear':components[8],'candDistrict':components[9]]);
+  def supportedEdge = g.addEdge(g.idx(T.v)[[committeeId:components[1]]].next(), candVertex, 'supports');
+}
+
+new File('cont.dat').eachLine {def line ->
+  def components = line.split('::');
+  def contributorVertex = g.addVertex(['type':'Contributor','contributorID':components[0], 'contName':components[1], 'contOccupation':components[2],'contCity':components[3],'contState':components[4],'contZip':components[5]]);
+}
+
+new File('indiv.dat').eachLine {def line ->
+  def components = line.split('::');
+  def indivVertex = g.addVertex(['type':'Contribution','contributionId':components[2], 'transDate':components[8] + components[9] +components[10],'amount':components[12].toInteger(),'transactionType':components[13]]);
+  def paymentEdge = g.addEdge(g.idx(T.v)[[committeeId:components[1]]].next(), indivVertex, 'receives');
+  def contributorEdge = g.addEdge(g.idx(T.v)[[contributorID:components[0]]].next(), indivVertex, 'makes');
+}
+
+new File('unicont2.dat').eachLine {def line ->
+  def components = line.split('::');
+  def uniContributorVertex = g.addVertex(['type':'UnitemizedCont','contAmount':components[3].toInteger()]);
+  def uniContributorEdge = g.addEdge(g.idx(T.v)[[candId:components[0]]].next(), uniContributorVertex, 'gives');
+}
+
+
+v = g.idx(T.v)[[committeeId:'C99003428']] >> 1
+
+
+new File('cand.dat').eachLine {def line ->
+  def components = line.split('::');
+  def candVertex = g.addVertex(['type':'Candidate','candId':components[0], 'candName':components[2], 'candCity':components[3], 'candState':components[4],'candZip':components[5],'candParty':components[6],'candStatus':components[7],'candYear':components[8],'candDistrict':components[9]]);
+  def supportedEdge = g.addEdge(g.idx(T.v)[[committeeId:components[1]]].next(), candVertex, 'supports');
+}
+
+
+ v = g.idx(T.v)[[candName:'CAIN, HERMAN']] >> 1
+v=g.idx(T.v)[[name:'FRIENDS OF HERMAN CAIN INC']] >> 1
+ gremlin> v.outE('receives').outV.filter{it.amount>4000}.inV.inE('makes').outV.contName[0..10]
+ v.inE('payments')[0..20]
+ 
+ v=g.idx(T.v)[[committeeId:'C00496067']] >> 1
+ 
+ Lamb, Kelly
+ 
+ v = g.idx(T.v)[[contName:'Lamb, Kelly']] >> 1
+
+  v.outE('receives').inV.amount[0..20]
+
+v=g.idx(T.v)[[candId:'P00003608']] >> 1
+ 
+P00003608
+
+
+v.inE('receives').outV.name[0..20]
+
+v.inE('receives').outV
+
+ v.outE('receives').filter{it.amount>4500}.outV.outE('supports').inV.contName[0..4]
+ 
+ v.outE('makes').amount
+ gremlin>  v.out('receives').filter{it.amount>4500}.contributionId
+==>0271463
+==>0271459
+==>0271384
+gremlin> v=g.idx(T.v)[[contributionId:'0271463']] >> 1
+==>v[789831]
+gremlin> v.map()
+==>amount=5000
+==>transactionType=Q2
+==>transDate=051611
+==>contributionId=0271463
+==>type=Contribution
+[/code]
+ m=[:]
+ 
+ v.out('receives').inE('makes').outV.filter{it !=v}.contOccupation.groupCount(m) >> -1
+ 
+ m.sort{a,b -> b.value <=> a.value}[0..39]
+ 
+ 
+  v = g.idx(T.v)[[contName:'Waddle, Julie']] >> 1
+ 
